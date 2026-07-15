@@ -6,3 +6,5 @@ target/
 .project
 .settings/
 .development-plans/
+data/
+*.db
