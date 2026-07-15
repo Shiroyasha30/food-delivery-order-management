@@ -26,6 +26,18 @@ Keep commit messages **concise** and on a **single line** (no multi-paragraph or
 
 Prefer constructor injection, Bean Validation, `@ControllerAdvice` for API errors, and SLF4J logging. Match existing patterns once code exists.
 
+## Agent skills (project)
+
+Use these under `.cursor/skills/`:
+
+| Skill | When |
+|-------|------|
+| `development` | Before any feature: write plan, get user approval, then implement; never commit the plan |
+| `validate-changes` | After code changes, before commit: run integration tests; on failure diagnose and get user verification before fixing |
+| `commit-changes` | When committing: small single-line message after validation |
+
+Implementation plans live under `.development-plans/` (gitignored).
+
 ## Development norms
 
 - Prefer small, focused changes; match repository style once scaffolding lands.
