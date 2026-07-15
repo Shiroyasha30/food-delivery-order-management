@@ -4,14 +4,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * Placeholder integration test so validate-changes is not blocked before real ITs exist.
- * Replace/extend with domain coverage as features are implemented.
+ * Smoke IT: application context loads with security, JPA, and SQLite.
+ * Full business flow coverage lives in {@link OrderLifecycleFlowIT}.
  */
 @SpringBootTest
 class DummyIT {
 
     @Test
-    void alwaysPasses() {
-        // intentionally empty — always green
+    void contextLoads() {
+        // context startup is the assertion
     }
 }
