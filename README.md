@@ -103,35 +103,17 @@ Status changes publish `OrderPlacedEvent` / `OrderStatusChangedEvent` after comm
 | POST | `/partner/orders/{orderId}/accept` | Claim order (contention-safe) |
 | POST | `/partner/orders/{orderId}/status` | `{"status":"OUT_FOR_DELIVERY"|"DELIVERED"}` |
 
-## Example flow
+## Sample curls
+
+- Full per-API catalog: [`docs/sample-curls.md`](docs/sample-curls.md)
+- Automated happy path (needs running server + `jq`):
 
 ```bash
-# 1) City + restaurant (owner-1 already seeded)
-curl -s -X POST http://localhost:8080/api/v1/admin/cities \
-  -H "X-User-Id: admin-1" -H "Content-Type: application/json" \
-  -d '{"name":"Pune"}'
-
-curl -s -X POST http://localhost:8080/api/v1/admin/restaurants \
-  -H "X-User-Id: admin-1" -H "Content-Type: application/json" \
-  -d '{"cityId":1,"name":"Spice Hub","ownerIds":["owner-1"]}'
-
-# 2) Menu
-curl -s -X POST http://localhost:8080/api/v1/owner/restaurants/1/menu-items \
-  -H "X-User-Id: owner-1" -H "Content-Type: application/json" \
-  -d '{"name":"Paneer Wrap","price":149.00,"stock":10}'
-
-# 3) Partner for city
-curl -s -X POST http://localhost:8080/api/v1/admin/delivery-partners \
-  -H "X-User-Id: admin-1" -H "Content-Type: application/json" \
-  -d '{"userId":"partner-1","displayName":"Rider One","cityId":1}'
-
-# 4) Place order
-curl -s -X POST http://localhost:8080/api/v1/customer/restaurants/1/orders \
-  -H "X-User-Id: customer-1" -H "Content-Type: application/json" \
-  -d '{"items":[{"menuItemId":1,"quantity":2}]}'
+mvn spring-boot:run
+# other terminal:
+chmod +x scripts/smoke-api.sh
+./scripts/smoke-api.sh
 ```
-
-Then owner accept → preparing; partner accept → out-for-delivery → delivered; customer rate.
 
 ## Tests
 
