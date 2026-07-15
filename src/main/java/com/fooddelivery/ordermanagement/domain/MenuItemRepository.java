@@ -1,6 +1,7 @@
 package com.fooddelivery.ordermanagement.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,4 +23,12 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
             @Param("cityId") Long cityId,
             @Param("name") String name
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update MenuItem m
+            set m.stock = m.stock - :qty
+            where m.id = :id and m.stock >= :qty
+            """)
+    int decrementStockIfAvailable(@Param("id") Long id, @Param("qty") int qty);
 }
