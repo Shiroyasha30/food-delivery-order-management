@@ -8,6 +8,10 @@ import com.fooddelivery.ordermanagement.customer.dto.RateDeliveryRequest;
 import com.fooddelivery.ordermanagement.customer.dto.RateItemRequest;
 import com.fooddelivery.ordermanagement.customer.dto.RatingResponse;
 import com.fooddelivery.ordermanagement.customer.dto.RestaurantSummaryResponse;
+import com.fooddelivery.ordermanagement.domain.DeliveryRating;
+import com.fooddelivery.ordermanagement.domain.DeliveryRatingRepository;
+import com.fooddelivery.ordermanagement.domain.ItemRating;
+import com.fooddelivery.ordermanagement.domain.ItemRatingRepository;
 import com.fooddelivery.ordermanagement.domain.MenuItem;
 import com.fooddelivery.ordermanagement.domain.MenuItemRepository;
 import com.fooddelivery.ordermanagement.domain.OrderEntity;
@@ -34,17 +38,23 @@ public class CustomerService {
     private final RestaurantRepository restaurantRepository;
     private final MenuItemRepository menuItemRepository;
     private final OrderRepository orderRepository;
+    private final ItemRatingRepository itemRatingRepository;
+    private final DeliveryRatingRepository deliveryRatingRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public CustomerService(
             RestaurantRepository restaurantRepository,
             MenuItemRepository menuItemRepository,
             OrderRepository orderRepository,
+            ItemRatingRepository itemRatingRepository,
+            DeliveryRatingRepository deliveryRatingRepository,
             ApplicationEventPublisher eventPublisher
     ) {
         this.restaurantRepository = restaurantRepository;
         this.menuItemRepository = menuItemRepository;
         this.orderRepository = orderRepository;
+        this.itemRatingRepository = itemRatingRepository;
+        this.deliveryRatingRepository = deliveryRatingRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -127,12 +137,51 @@ public class CustomerService {
         return toOrderResponse(order);
     }
 
+    @Transactional
     public RatingResponse rateItem(String customerId, Long orderId, Long itemId, RateItemRequest request) {
-        throw notImplemented();
+        OrderEntity order = requireDeliveredOrder(customerId, orderId);
+        boolean inOrder = order.getLines().stream().anyMatch(line -> line.getMenuItem().getId().equals(itemId));
+        if (!inOrder) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Item not part of this order");
+        }
+        if (itemRatingRepository.existsByOrderIdAndMenuItemIdAndCustomerId(orderId, itemId, customerId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Item already rated for this order");
+        }
+        MenuItem item = menuItemRepository.findById(itemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Menu item not found"));
+        ItemRating rating = itemRatingRepository.save(new ItemRating(
+                order,
+                item,
+                customerId,
+                request.rating(),
+                request.review()
+        ));
+        return new RatingResponse(rating.getId(), rating.getRating(), rating.getReview());
     }
 
+    @Transactional
     public RatingResponse rateDelivery(String customerId, Long orderId, RateDeliveryRequest request) {
-        throw notImplemented();
+        OrderEntity order = requireDeliveredOrder(customerId, orderId);
+        if (deliveryRatingRepository.existsByOrderIdAndCustomerId(orderId, customerId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Delivery already rated for this order");
+        }
+        DeliveryRating rating = deliveryRatingRepository.save(new DeliveryRating(
+                order,
+                customerId,
+                order.getDeliveryPartnerId(),
+                request.rating(),
+                request.review()
+        ));
+        return new RatingResponse(rating.getId(), rating.getRating(), rating.getReview());
+    }
+
+    private OrderEntity requireDeliveredOrder(String customerId, Long orderId) {
+        OrderEntity order = orderRepository.findByIdAndCustomerId(orderId, customerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        if (order.getStatus() != OrderStatus.DELIVERED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ratings allowed only after delivery");
+        }
+        return order;
     }
 
     public static OrderResponse toOrderResponse(OrderEntity order) {
@@ -163,9 +212,6 @@ public class CustomerService {
         );
     }
 
-    private static ResponseStatusException notImplemented() {
-        return new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "Not implemented yet");
-    }
 
     private record PreparedLine(MenuItem item, int quantity, BigDecimal unitPrice) {
     }
