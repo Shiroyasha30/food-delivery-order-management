@@ -16,7 +16,7 @@ Run this **before every commit** after code changes. Do not commit until validat
 1. **Discover how to run integration tests**
    - Prefer Maven: `mvn -q verify` (Failsafe IT + unit tests).
    - If Failsafe is not configured yet, fall back to `mvn -q test`.
-   - Real domain IT coverage will grow as features are coded; a dummy always-passing IT exists so this skill is not blocked.
+   - Prefer keeping `OrderLifecycleFlowIT` updated when flows change; `DummyIT` remains a context-load smoke test.
 
 2. **Run the suite** and capture full failure output.
 
